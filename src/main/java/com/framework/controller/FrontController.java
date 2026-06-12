@@ -18,7 +18,9 @@ public class FrontController extends HttpServlet {
         }
 
         response.setContentType("text/html");
-        response.getWriter().println("Bienvenue sur la page d'accueil\nUrl actuel: " + path);
+        PrintWriter out = response.getWriter();
+        out.println("<h1>Bienvenue sur la page d'accueil</h1>");
+        out.println("<p>URL actuelle : " + path + "</p>");
     }
 
     @Override
