@@ -1,5 +1,6 @@
 package com.framework.controller;
 
+import com.framework.service.Utils;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -7,8 +8,22 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 
 public class FrontController extends HttpServlet {
+    List<String> listeControllers = new ArrayList<>();
+
+    @Override
+    public void init() throws ServletException {
+        try {
+            String controllersPackage = getServletConfig().getInitParameter("controller");
+
+            listeControllers = Utils.getControllers(controllersPackage);
+        } catch (Exception e) {
+            throw new ServletException("Erreur lors de l'initialisation du DispatcherServlet", e);
+        }
+    }
 
     public void affichage(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String path = request.getPathInfo();
@@ -21,6 +36,13 @@ public class FrontController extends HttpServlet {
         PrintWriter out = response.getWriter();
         out.println("<h1>Bienvenue sur la page d'accueil</h1>");
         out.println("<p>URL actuelle : " + path + "</p>");
+
+        out.println("<h2>Liste des controllers :</h2>");
+        out.println("<ul>");
+        for (String controllerName : listeControllers) {
+            out.println("<li>" + controllerName + "</li>");
+        }
+        out.println("</ul>");
     }
 
     @Override
