@@ -34,35 +34,19 @@ public class Utils {
             String protocol = packageURL.getProtocol();
 
             if ("file".equals(protocol)) {
-                // Running from exploded classes (e.g. IDE or exploded WAR)
                 File directory = new File(packageURL.toURI());
-                if (!directory.exists() || !directory.isDirectory()) {
-                    throw new RuntimeException("Directory not found for package: " + packageName);
-                }
-                String[] files = directory.list();
-                if (files == null) {
-                    throw new RuntimeException("No classes found in package: " + packageName);
-                }
-                for (String file : files) {
-                    if (file.endsWith(".class")) {
-                        String className = packageName + '.' + file.substring(0, file.length() - 6);
-                        classes.add(Class.forName(className));
-                    }
-                }
+                scanDirectory(directory, packageName, classes);
 
             } else if ("jar".equals(protocol)) {
-                // Running from inside a JAR/WAR
                 JarURLConnection jarConn = (JarURLConnection) packageURL.openConnection();
                 JarFile jarFile = jarConn.getJarFile();
                 Enumeration<JarEntry> entries = jarFile.entries();
                 while (entries.hasMoreElements()) {
                     JarEntry entry = entries.nextElement();
                     String entryName = entry.getName();
-                    // Match entries that are directly in the package (no subdirectory)
                     if (entryName.startsWith(packagePath + "/")
                             && entryName.endsWith(".class")
-                            && !entry.isDirectory()
-                            && entryName.indexOf('/', packagePath.length() + 1) == -1) {
+                            && !entry.isDirectory()) {
                         String className = entryName.replace('/', '.').replace(".class", "");
                         classes.add(Class.forName(className));
                     }
@@ -79,4 +63,18 @@ public class Utils {
         }
         return classes;
     }
+
+    private static void scanDirectory(File directory, String packageName, List<Class<?>> classes) throws Exception {
+        if (!directory.exists() || !directory.isDirectory()) return;
+
+        for (File file : directory.listFiles()) {
+            if (file.isDirectory()) {
+                scanDirectory(file, packageName + "." + file.getName(), classes);
+            } else if (file.getName().endsWith(".class")) {
+                String className = packageName + "." + file.getName().replace(".class", "");
+                classes.add(Class.forName(className));
+            }
+        }
+    }
 }
+
