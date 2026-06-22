@@ -1,10 +1,13 @@
 package com.framework.service;
 
+import com.framework.annotation.Controller;
+import com.framework.annotation.FrontMapping;
+import com.framework.model.Mapping;
+
 import java.io.File;
+import java.lang.reflect.Method;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
+import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.net.JarURLConnection;
@@ -75,6 +78,26 @@ public class Utils {
                 classes.add(Class.forName(className));
             }
         }
+    }
+
+    public static Map<String, Mapping> getMappings(String packageName) {
+        List<Class<?>> classes = findClass(packageName);
+        Map<String, Mapping> mappings = new HashMap<>();
+
+        for (Class<?> clazz : classes) {
+            if (!clazz.isAnnotationPresent(Controller.class)) continue;
+
+            for (Method method : clazz.getDeclaredMethods()) {
+                if (method.isAnnotationPresent(FrontMapping.class)) {
+                    String url = method.getAnnotation(FrontMapping.class).value();
+                    if (mappings.containsKey(url)) {
+                        throw new RuntimeException("URL en double : '" + url + "' déjà mappée par " + mappings.get(url));
+                    }
+                    mappings.put(url, new Mapping(clazz.getName(), method.getName()));
+                }
+            }
+        }
+        return mappings;
     }
 }
 

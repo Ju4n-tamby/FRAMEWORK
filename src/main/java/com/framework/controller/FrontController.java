@@ -1,5 +1,6 @@
 package com.framework.controller;
 
+import com.framework.model.Mapping;
 import com.framework.service.Utils;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -10,18 +11,19 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class FrontController extends HttpServlet {
-    List<String> listeControllers = new ArrayList<>();
+    private List<String> listeControllers = new ArrayList<>();
+    private Map<String, Mapping> mappings;
 
     @Override
     public void init() throws ServletException {
         try {
             String controllersPackage = getServletConfig().getInitParameter("controller");
-
-            listeControllers = Utils.getControllers(controllersPackage);
+            mappings = Utils.getMappings(controllersPackage);
         } catch (Exception e) {
-            throw new ServletException("Erreur lors de l'initialisation du DispatcherServlet", e);
+            throw new ServletException("Erreur lors de l'initialisation du FrontController", e);
         }
     }
 
