@@ -49,7 +49,7 @@ public class FrontController extends HttpServlet {
             out.println("<h2>URLs disponibles :</h2>");
             out.println("<ul>");
             for (String url : mappings.keySet()) {
-                out.println("<li><a href='" + url + "'>" + url + "</a> → " + mappings.get(url) + "</li>");
+                out.println("<li><a href='" + request.getContextPath() + url + "'>" + url + "</a> → " + mappings.get(url) + "</li>");
             }
             out.println("</ul>");
         }
