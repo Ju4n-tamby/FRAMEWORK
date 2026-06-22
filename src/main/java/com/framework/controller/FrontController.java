@@ -27,24 +27,32 @@ public class FrontController extends HttpServlet {
         }
     }
 
-    public void affichage(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    public void affichage(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String path = request.getPathInfo();
+        if (path == null) path = request.getServletPath();
 
-        if (path == null) {
-            path = request.getServletPath();
-        }
-
-        response.setContentType("text/html");
+        response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = response.getWriter();
-        out.println("<h1>Bienvenue sur la page d'accueil</h1>");
-        out.println("<p>URL actuelle : " + path + "</p>");
 
-        out.println("<h2>Liste des controllers :</h2>");
-        out.println("<ul>");
-        for (String controllerName : listeControllers) {
-            out.println("<li>" + controllerName + "</li>");
+        Mapping mapping = mappings.get(path);
+
+        if (mapping != null) {
+            response.setStatus(HttpServletResponse.SC_OK);
+            out.println("<h1>Mapping trouvé</h1>");
+            out.println("<p><b>URL :</b> " + path + "</p>");
+            out.println("<p><b>Controller :</b> " + mapping.getClassName() + "</p>");
+            out.println("<p><b>Méthode :</b> " + mapping.getMethodName() + "</p>");
+        } else {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            out.println("<h1>404 - Page non trouvée</h1>");
+            out.println("<p>L'URL <b>" + path + "</b> n'est pas prise en charge.</p>");
+            out.println("<h2>URLs disponibles :</h2>");
+            out.println("<ul>");
+            for (String url : mappings.keySet()) {
+                out.println("<li><a href='" + url + "'>" + url + "</a> → " + mappings.get(url) + "</li>");
+            }
+            out.println("</ul>");
         }
-        out.println("</ul>");
     }
 
     @Override
