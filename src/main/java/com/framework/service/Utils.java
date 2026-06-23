@@ -1,5 +1,12 @@
 package com.framework.service;
 
+<<<<<<< Updated upstream
+=======
+import com.framework.annotation.Controller;
+import com.framework.annotation.FrontMapping;
+import com.framework.model.UrlMapping;
+
+>>>>>>> Stashed changes
 import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
@@ -76,5 +83,28 @@ public class Utils {
             }
         }
     }
+<<<<<<< Updated upstream
+=======
+
+    public static Map<String, UrlMapping> getMappings(String packageName) {
+        List<Class<?>> classes = findClass(packageName);
+        Map<String, UrlMapping> mappings = new HashMap<>();
+
+        for (Class<?> clazz : classes) {
+            if (!clazz.isAnnotationPresent(Controller.class)) continue;
+
+            for (Method method : clazz.getDeclaredMethods()) {
+                if (method.isAnnotationPresent(FrontMapping.class)) {
+                    String url = method.getAnnotation(FrontMapping.class).value();
+                    if (mappings.containsKey(url)) {
+                        throw new RuntimeException("URL en double : '" + url + "' déjà mappée par " + mappings.get(url));
+                    }
+                    mappings.put(url, new UrlMapping(clazz, method));
+                }
+            }
+        }
+        return mappings;
+    }
+>>>>>>> Stashed changes
 }
 
