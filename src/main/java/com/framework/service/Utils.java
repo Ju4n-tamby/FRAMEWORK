@@ -1,17 +1,13 @@
 package com.framework.service;
 
-<<<<<<< Updated upstream
-=======
 import com.framework.annotation.Controller;
 import com.framework.annotation.FrontMapping;
 import com.framework.model.UrlMapping;
 
->>>>>>> Stashed changes
 import java.io.File;
+import java.lang.reflect.Method;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
+import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.net.JarURLConnection;
@@ -83,8 +79,6 @@ public class Utils {
             }
         }
     }
-<<<<<<< Updated upstream
-=======
 
     public static Map<String, UrlMapping> getMappings(String packageName) {
         List<Class<?>> classes = findClass(packageName);
@@ -105,6 +99,5 @@ public class Utils {
         }
         return mappings;
     }
->>>>>>> Stashed changes
 }
 

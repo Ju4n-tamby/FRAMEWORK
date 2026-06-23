@@ -1,9 +1,6 @@
 package com.framework.controller;
 
-<<<<<<< Updated upstream
-=======
 import com.framework.model.UrlMapping;
->>>>>>> Stashed changes
 import com.framework.service.Utils;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -12,18 +9,13 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-<<<<<<< Updated upstream
 import java.util.ArrayList;
 import java.util.List;
-
-public class FrontController extends HttpServlet {
-    List<String> listeControllers = new ArrayList<>();
-=======
 import java.util.Map;
 
 public class FrontController extends HttpServlet {
+    List<String> listeControllers = new ArrayList<>();
     private Map<String, UrlMapping> mappings;
->>>>>>> Stashed changes
 
     @Override
     public void init() throws ServletException {
@@ -39,10 +31,10 @@ public class FrontController extends HttpServlet {
     public void affichage(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String path = request.getPathInfo();
 
-<<<<<<< Updated upstream
         if (path == null) {
             path = request.getServletPath();
-=======
+        }
+
         response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = response.getWriter();
 
@@ -64,20 +56,7 @@ public class FrontController extends HttpServlet {
                 out.println("<li><a href='" + request.getContextPath() + url + "'>" + url + "</a> → " + mappings.get(url) + "</li>");
             }
             out.println("</ul>");
->>>>>>> Stashed changes
         }
-
-        response.setContentType("text/html");
-        PrintWriter out = response.getWriter();
-        out.println("<h1>Bienvenue sur la page d'accueil</h1>");
-        out.println("<p>URL actuelle : " + path + "</p>");
-
-        out.println("<h2>Liste des controllers :</h2>");
-        out.println("<ul>");
-        for (String controllerName : listeControllers) {
-            out.println("<li>" + controllerName + "</li>");
-        }
-        out.println("</ul>");
     }
 
     @Override
