@@ -2,7 +2,9 @@ package com.framework.service;
 
 import com.framework.annotation.Controller;
 import com.framework.annotation.FrontMapping;
+import com.framework.annotation.Url;
 import com.framework.model.UrlMapping;
+import com.framework.model.UrlMethod;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -94,6 +96,28 @@ public class Utils {
                         throw new RuntimeException("URL en double : '" + url + "' déjà mappée par " + mappings.get(url));
                     }
                     mappings.put(url, new UrlMapping(clazz, method));
+                }
+            }
+        }
+        return mappings;
+    }
+
+    public static Map<UrlMethod, UrlMapping> getMappingsAvecMethod(String packageName) {
+        List<Class<?>> classes = findClass(packageName);
+        Map<UrlMethod, UrlMapping> mappings = new HashMap<>();
+
+        for (Class<?> clazz : classes) {
+            if (!clazz.isAnnotationPresent(Controller.class)) continue;
+
+            for (Method method : clazz.getDeclaredMethods()) {
+                if (method.isAnnotationPresent(FrontMapping.class)) {
+                    String url = method.getAnnotation(Url.class).value();
+                    String httpMethod = method.getAnnotation(Url.class).method();
+                    UrlMethod urlMethod = new UrlMethod(url, httpMethod);
+                    if (mappings.containsKey(urlMethod)) {
+                        throw new RuntimeException("URL en double : '" + url + "' déjà mappée par " + mappings.get(urlMethod));
+                    }
+                    mappings.put(urlMethod, new UrlMapping(clazz, method));
                 }
             }
         }

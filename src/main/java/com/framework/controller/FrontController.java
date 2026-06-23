@@ -1,6 +1,7 @@
 package com.framework.controller;
 
 import com.framework.model.UrlMapping;
+import com.framework.model.UrlMethod;
 import com.framework.service.Utils;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -15,14 +16,14 @@ import java.util.Map;
 
 public class FrontController extends HttpServlet {
     List<String> listeControllers = new ArrayList<>();
-    private Map<String, UrlMapping> mappings;
+    private Map<UrlMethod, UrlMapping> mappings;
 
     @Override
     public void init() throws ServletException {
         try {
             String controllersPackage = getServletConfig().getInitParameter("controller");
+            mappings = Utils.getMappingsAvecMethod(controllersPackage);
 
-            listeControllers = Utils.getControllers(controllersPackage);
         } catch (Exception e) {
             throw new ServletException("Erreur lors de l'initialisation du DispatcherServlet", e);
         }
@@ -30,20 +31,23 @@ public class FrontController extends HttpServlet {
 
     public void affichage(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String path = request.getPathInfo();
-
         if (path == null) {
             path = request.getServletPath();
         }
 
+        String httpMethod = request.getMethod();
+        UrlMethod urlMethod = new UrlMethod(httpMethod, path);
+
         response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = response.getWriter();
 
-        UrlMapping urlMapping = mappings.get(path);
+        UrlMapping urlMapping = mappings.get(urlMethod);
 
         if (urlMapping != null) {
             response.setStatus(HttpServletResponse.SC_OK);
             out.println("<h1>UrlMapping trouvé</h1>");
             out.println("<p><b>URL :</b> " + path + "</p>");
+            out.println("<p><b>HttpMethod :</b>" + urlMethod.getMethod() + "</p>");
             out.println("<p><b>Controller :</b> " + urlMapping.getClazz().getName() + "</p>");
             out.println("<p><b>Méthode :</b> " + urlMapping.getMethod().getName() + "</p>");
         } else {
@@ -52,8 +56,8 @@ public class FrontController extends HttpServlet {
             out.println("<p>L'URL <b>" + path + "</b> n'est pas prise en charge.</p>");
             out.println("<h2>URLs disponibles :</h2>");
             out.println("<ul>");
-            for (String url : mappings.keySet()) {
-                out.println("<li><a href='" + request.getContextPath() + url + "'>" + url + "</a> → " + mappings.get(url) + "</li>");
+            for (UrlMethod method : mappings.keySet()) {
+                out.println("<li><a href='" + request.getContextPath() + method.getUrl() + "'>" + method.getUrl() + "</a> → " + mappings.get(method) + "</li>");
             }
             out.println("</ul>");
         }
