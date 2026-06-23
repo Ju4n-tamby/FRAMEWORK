@@ -110,13 +110,22 @@ public class Utils {
             if (!clazz.isAnnotationPresent(Controller.class)) continue;
 
             for (Method method : clazz.getDeclaredMethods()) {
-                if (method.isAnnotationPresent(FrontMapping.class)) {
-                    String url = method.getAnnotation(Url.class).value();
-                    String httpMethod = method.getAnnotation(Url.class).method();
+                if (method.isAnnotationPresent(Url.class)) {
+
+                    Url annotation = method.getAnnotation(Url.class);
+
+                    String url = annotation.value();
+                    String httpMethod = annotation.method();
+
                     UrlMethod urlMethod = new UrlMethod(url, httpMethod);
+
                     if (mappings.containsKey(urlMethod)) {
-                        throw new RuntimeException("URL en double : '" + url + "' déjà mappée par " + mappings.get(urlMethod));
+                        throw new RuntimeException(
+                                "URL en double : '" + url +
+                                        "' déjà mappée par " + mappings.get(urlMethod)
+                        );
                     }
+
                     mappings.put(urlMethod, new UrlMapping(clazz, method));
                 }
             }

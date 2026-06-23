@@ -36,7 +36,7 @@ public class FrontController extends HttpServlet {
         }
 
         String httpMethod = request.getMethod();
-        UrlMethod urlMethod = new UrlMethod(httpMethod, path);
+        UrlMethod urlMethod = new UrlMethod(path, httpMethod);
 
         response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = response.getWriter();
