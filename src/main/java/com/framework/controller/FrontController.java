@@ -45,11 +45,28 @@ public class FrontController extends HttpServlet {
 
         if (urlMapping != null) {
             response.setStatus(HttpServletResponse.SC_OK);
+
             out.println("<h1>UrlMapping trouvé</h1>");
             out.println("<p><b>URL :</b> " + path + "</p>");
             out.println("<p><b>HttpMethod :</b>" + urlMethod.getMethod() + "</p>");
             out.println("<p><b>Controller :</b> " + urlMapping.getClazz().getName() + "</p>");
             out.println("<p><b>Méthode :</b> " + urlMapping.getMethod().getName() + "</p>");
+
+            try {
+                Object controller =
+                        urlMapping.getClazz()
+                                .getDeclaredConstructor()
+                                .newInstance();
+
+                Object retour =
+                        urlMapping.getMethod()
+                                .invoke(controller);
+
+                out.println("<p><b>Retour :</b> " + retour + "</p>");
+
+            } catch (Exception e) {
+                throw new ServletException(e);
+            }
         } else {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             out.println("<h1>404 - Page non trouvée</h1>");
@@ -57,7 +74,15 @@ public class FrontController extends HttpServlet {
             out.println("<h2>URLs disponibles :</h2>");
             out.println("<ul>");
             for (UrlMethod method : mappings.keySet()) {
-                out.println("<li><a href='" + request.getContextPath() + method.getUrl() + "'>" + method.getUrl() + "</a> → " + mappings.get(method) + "</li>");
+                if (method.getMethod().equals("POST"))
+                    out.println(
+                            "<li><form action='" + request.getContextPath() + method.getUrl() + "' method='POST'>" +
+                                    "<button type='submit'>" + method.getUrl() + "</button>" +
+                                    " → " + mappings.get(method) +
+                                    "</form></li>"
+                    );
+                else
+                    out.println("<li><a href='" + request.getContextPath() + method.getUrl() + "'>" + method.getUrl() + "</a> → " + mappings.get(method) + "</li>");
             }
             out.println("</ul>");
         }
