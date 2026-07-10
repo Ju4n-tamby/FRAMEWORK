@@ -3,6 +3,7 @@ package com.framework.controller;
 import com.framework.model.UrlMapping;
 import com.framework.model.UrlMethod;
 import com.framework.service.Utils;
+import com.framework.service.ViewPath;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,10 +16,12 @@ import java.util.Map;
 
 public class FrontController extends HttpServlet {
     private Map<UrlMethod, UrlMapping> mappings;
+    private ViewPath viewPath;
 
     @Override
     public void init() throws ServletException {
         mappings = (HashMap<UrlMethod, UrlMapping>) getServletContext().getAttribute("urlMappings");
+        viewPath = (ViewPath) getServletContext().getAttribute("viewPath");
     }
 
     public void affichage(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
