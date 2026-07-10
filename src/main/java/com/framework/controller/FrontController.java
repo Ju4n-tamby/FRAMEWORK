@@ -4,6 +4,8 @@ import com.framework.model.UrlMapping;
 import com.framework.model.UrlMethod;
 import com.framework.service.Utils;
 import com.framework.service.ViewPath;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,6 +27,14 @@ public class FrontController extends HttpServlet {
     }
 
     public void affichage(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+        // ---- Requête interne (forward vers une JSP) : on laisse Tomcat servir la JSP ----
+        if (request.getDispatcherType() == DispatcherType.FORWARD) {
+            RequestDispatcher rd = getServletContext().getNamedDispatcher("jsp");
+            rd.forward(request, response);
+            return;
+        }
+
         String path = request.getPathInfo();
         if (path == null) {
             path = request.getServletPath();
