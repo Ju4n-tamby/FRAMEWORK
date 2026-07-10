@@ -5,8 +5,13 @@ import com.framework.annotation.FrontMapping;
 import com.framework.annotation.Url;
 import com.framework.model.UrlMapping;
 import com.framework.model.UrlMethod;
+import com.framework.model.VueData;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.*;
@@ -131,6 +136,30 @@ public class Utils {
             }
         }
         return mappings;
+    }
+
+    public static String formatterVue(String vue, ViewPath viewPath) {
+        return viewPath.getPrefix() + vue + viewPath.getSuffix();
+    }
+
+    public static void redirigerRequete(Object result, ViewPath viewPath, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+        if (result instanceof String) {
+            String vue = formatterVue((String) result, viewPath);
+
+            request.getRequestDispatcher(vue).forward(request, response);
+        } else if (result instanceof VueData) {
+            VueData vueData = (VueData) result;
+
+            if (vueData.getData() != null) {
+                for (Map.Entry<String, Object> entry : vueData.getData().entrySet()) {
+                    request.setAttribute(entry.getKey(), entry.getValue());
+                }
+            }
+
+            String vue = formatterVue(vueData.getVue(), viewPath);
+            request.getRequestDispatcher(vue).forward(request, response);
+
+        }
     }
 }
 
