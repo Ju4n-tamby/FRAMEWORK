@@ -2,7 +2,7 @@ package com.framework.controller;
 
 import com.framework.model.UrlMapping;
 import com.framework.model.UrlMethod;
-import com.framework.service.Utils;
+import com.framework.model.VueData;
 import com.framework.service.ViewPath;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -21,7 +21,12 @@ public class FrontController extends HttpServlet {
     @Override
     public void init() throws ServletException {
         mappings = (HashMap<UrlMethod, UrlMapping>) getServletContext().getAttribute("urlMappings");
-        viewPath = (ViewPath) getServletContext().getAttribute("viewPath");
+
+        // Récupère prefix/suffix depuis le web.xml (init-param du servlet)
+        String prefix = getInitParameter("prefix");
+        String suffix = getInitParameter("suffix");
+        viewPath = new ViewPath(prefix, suffix);
+        getServletContext().setAttribute("viewPath", viewPath);
     }
 
     public void affichage(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -33,37 +38,51 @@ public class FrontController extends HttpServlet {
         String httpMethod = request.getMethod();
         UrlMethod urlMethod = new UrlMethod(path, httpMethod);
 
-        response.setContentType("text/html;charset=UTF-8");
-        PrintWriter out = response.getWriter();
-
         UrlMapping urlMapping = mappings.get(urlMethod);
 
         if (urlMapping != null) {
-            response.setStatus(HttpServletResponse.SC_OK);
-
-            out.println("<h1>UrlMapping trouvé</h1>");
-            out.println("<p><b>URL :</b> " + path + "</p>");
-            out.println("<p><b>HttpMethod :</b>" + urlMethod.getMethod() + "</p>");
-            out.println("<p><b>Controller :</b> " + urlMapping.getClazz().getName() + "</p>");
-            out.println("<p><b>Méthode :</b> " + urlMapping.getMethod().getName() + "</p>");
-
             try {
-                Object controller =
-                        urlMapping.getClazz()
-                                .getDeclaredConstructor()
-                                .newInstance();
+                Object controller = urlMapping.getClazz()
+                        .getDeclaredConstructor()
+                        .newInstance();
 
-                Object retour =
-                        urlMapping.getMethod()
-                                .invoke(controller);
+                Object retour = urlMapping.getMethod().invoke(controller);
 
-                out.println("<p><b>Retour :</b> " + retour + "</p>");
+                if (retour instanceof VueData) {
+                    // ---- Cas VueData : on forward vers la JSP ----
+                    VueData vueData = (VueData) retour;
+
+                    if (vueData.getData() != null) {
+                        for (Map.Entry<String, Object> entry : vueData.getData().entrySet()) {
+                            request.setAttribute(entry.getKey(), entry.getValue());
+                        }
+                    }
+
+                    String viewName = viewPath.getPrefix() + vueData.getVue() + viewPath.getSuffix();
+                    request.getRequestDispatcher(viewName).forward(request, response);
+
+                } else {
+                    // ---- Cas String / void : comportement debug actuel ----
+                    response.setContentType("text/html;charset=UTF-8");
+                    response.setStatus(HttpServletResponse.SC_OK);
+                    PrintWriter out = response.getWriter();
+
+                    out.println("<h1>UrlMapping trouvé</h1>");
+                    out.println("<p><b>URL :</b> " + path + "</p>");
+                    out.println("<p><b>HttpMethod :</b>" + urlMethod.getMethod() + "</p>");
+                    out.println("<p><b>Controller :</b> " + urlMapping.getClazz().getName() + "</p>");
+                    out.println("<p><b>Méthode :</b> " + urlMapping.getMethod().getName() + "</p>");
+                    out.println("<p><b>Retour :</b> " + retour + "</p>");
+                }
 
             } catch (Exception e) {
                 throw new ServletException(e);
             }
         } else {
+            response.setContentType("text/html;charset=UTF-8");
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            PrintWriter out = response.getWriter();
+
             out.println("<h1>404 - Page non trouvée</h1>");
             out.println("<p>L'URL <b>" + path + "</b> n'est pas prise en charge.</p>");
             out.println("<h2>URLs disponibles :</h2>");
