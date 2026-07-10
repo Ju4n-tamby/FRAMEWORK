@@ -10,23 +10,15 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 public class FrontController extends HttpServlet {
-    List<String> listeControllers = new ArrayList<>();
     private Map<UrlMethod, UrlMapping> mappings;
 
     @Override
     public void init() throws ServletException {
-        try {
-            String controllersPackage = getServletConfig().getInitParameter("controller");
-            mappings = Utils.getMappingsAvecMethod(controllersPackage);
-
-        } catch (Exception e) {
-            throw new ServletException("Erreur lors de l'initialisation du DispatcherServlet", e);
-        }
+        mappings = (HashMap<UrlMethod, UrlMapping>) getServletContext().getAttribute("urlMappings");
     }
 
     public void affichage(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
