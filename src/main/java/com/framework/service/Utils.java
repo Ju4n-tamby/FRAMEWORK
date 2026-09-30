@@ -9,7 +9,8 @@ import com.framework.model.VueData;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -75,7 +76,8 @@ public class Utils {
     }
 
     private static void scanDirectory(File directory, String packageName, List<Class<?>> classes) throws Exception {
-        if (!directory.exists() || !directory.isDirectory()) return;
+        if (!directory.exists() || !directory.isDirectory())
+            return;
 
         for (File file : directory.listFiles()) {
             if (file.isDirectory()) {
@@ -92,13 +94,15 @@ public class Utils {
         Map<String, UrlMapping> mappings = new HashMap<>();
 
         for (Class<?> clazz : classes) {
-            if (!clazz.isAnnotationPresent(Controller.class)) continue;
+            if (!clazz.isAnnotationPresent(Controller.class))
+                continue;
 
             for (Method method : clazz.getDeclaredMethods()) {
                 if (method.isAnnotationPresent(FrontMapping.class)) {
                     String url = method.getAnnotation(FrontMapping.class).value();
                     if (mappings.containsKey(url)) {
-                        throw new RuntimeException("URL en double : '" + url + "' déjà mappée par " + mappings.get(url));
+                        throw new RuntimeException(
+                                "URL en double : '" + url + "' déjà mappée par " + mappings.get(url));
                     }
                     mappings.put(url, new UrlMapping(clazz, method));
                 }
@@ -112,7 +116,8 @@ public class Utils {
         Map<UrlMethod, UrlMapping> mappings = new HashMap<>();
 
         for (Class<?> clazz : classes) {
-            if (!clazz.isAnnotationPresent(Controller.class)) continue;
+            if (!clazz.isAnnotationPresent(Controller.class))
+                continue;
 
             for (Method method : clazz.getDeclaredMethods()) {
                 if (method.isAnnotationPresent(Url.class)) {
@@ -127,8 +132,7 @@ public class Utils {
                     if (mappings.containsKey(urlMethod)) {
                         throw new RuntimeException(
                                 "URL en double : '" + url +
-                                        "' déjà mappée par " + mappings.get(urlMethod)
-                        );
+                                        "' déjà mappée par " + mappings.get(urlMethod));
                     }
 
                     mappings.put(urlMethod, new UrlMapping(clazz, method));
@@ -142,7 +146,8 @@ public class Utils {
         return viewPath.getPrefix() + vue + viewPath.getSuffix();
     }
 
-    public static void redirigerRequete(Object result, ViewPath viewPath, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+    public static void redirigerRequete(Object result, ViewPath viewPath, HttpServletRequest request,
+            HttpServletResponse response) throws IOException, ServletException {
         if (result instanceof String) {
             String vue = formatterVue((String) result, viewPath);
 
@@ -161,5 +166,116 @@ public class Utils {
 
         }
     }
-}
 
+    public static boolean estRestAPI(Method method) {
+        return method.isAnnotationPresent(com.framework.annotation.RestAPI.class)
+                || method.getDeclaringClass().isAnnotationPresent(com.framework.annotation.RestAPI.class);
+    }
+
+    public static void envoyerJson(Object object, HttpServletResponse response) throws java.io.IOException {
+        response.setContentType("application/json;charset=UTF-8");
+        response.setCharacterEncoding("UTF-8");
+        java.io.PrintWriter writer = response.getWriter();
+        writer.write(toJson(object));
+        writer.flush();
+    }
+
+    public static String toJson(Object obj) {
+        StringBuilder sb = new StringBuilder();
+        serialize(obj, sb);
+        return sb.toString();
+    }
+
+    private static void serialize(Object obj, StringBuilder sb) {
+        if (obj == null) {
+            sb.append("null");
+        } else if (obj instanceof String || obj instanceof Character) {
+            sb.append('"').append(escape(obj.toString())).append('"');
+        } else if (obj instanceof Number || obj instanceof Boolean) {
+            sb.append(obj.toString());
+        } else if (obj instanceof Enum) {
+            sb.append('"').append(escape(((Enum<?>) obj).name())).append('"');
+        } else if (obj instanceof Map<?, ?> map) {
+            sb.append('{');
+            boolean first = true;
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                if (!first)
+                    sb.append(',');
+                first = false;
+                sb.append('"').append(escape(String.valueOf(entry.getKey()))).append("\":");
+                serialize(entry.getValue(), sb);
+            }
+            sb.append('}');
+        } else if (obj instanceof Collection<?> collection) {
+            sb.append('[');
+            boolean first = true;
+            for (Object item : collection) {
+                if (!first)
+                    sb.append(',');
+                first = false;
+                serialize(item, sb);
+            }
+            sb.append(']');
+        } else if (obj.getClass().isArray()) {
+            sb.append('[');
+            int length = java.lang.reflect.Array.getLength(obj);
+            for (int i = 0; i < length; i++) {
+                if (i > 0)
+                    sb.append(',');
+                serialize(java.lang.reflect.Array.get(obj, i), sb);
+            }
+            sb.append(']');
+        } else {
+            serializeBean(obj, sb);
+        }
+    }
+
+    private static void serializeBean(Object obj, StringBuilder sb) {
+        sb.append('{');
+        boolean first = true;
+        Class<?> clazz = obj.getClass();
+        while (clazz != null && clazz != Object.class) {
+            for (Field field : clazz.getDeclaredFields()) {
+                if (Modifier.isStatic(field.getModifiers()) || field.isSynthetic())
+                    continue;
+                field.setAccessible(true);
+                try {
+                    Object value = field.get(obj);
+                    if (!first)
+                        sb.append(',');
+                    first = false;
+                    sb.append('"').append(escape(field.getName())).append("\":");
+                    serialize(value, sb);
+                } catch (Exception ignored) {
+                    // champ inaccessible, on l'ignore
+                }
+            }
+            clazz = clazz.getSuperclass();
+        }
+        sb.append('}');
+    }
+
+    private static String escape(String s) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            switch (c) {
+                case '"' -> sb.append("\\\"");
+                case '\\' -> sb.append("\\\\");
+                case '\n' -> sb.append("\\n");
+                case '\r' -> sb.append("\\r");
+                case '\t' -> sb.append("\\t");
+                case '\b' -> sb.append("\\b");
+                case '\f' -> sb.append("\\f");
+                default -> {
+                    if (c < 0x20) {
+                        sb.append(String.format("\\u%04x", (int) c));
+                    } else {
+                        sb.append(c);
+                    }
+                }
+            }
+        }
+        return sb.toString();
+    }
+}
