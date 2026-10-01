@@ -50,7 +50,8 @@ public class FrontController extends HttpServlet {
             try {
                 Object controller = urlMapping.getClazz().getDeclaredConstructor().newInstance();
                 Method method = urlMapping.getMethod();
-                Object result = method.invoke(controller);
+                Object[] args = Utils.construireArguments(method, request);
+                Object result = method.invoke(controller, args);
 
                 if (Utils.estRestAPI(method)) {
                     Utils.envoyerJson(result, response);
