@@ -305,7 +305,6 @@ public class Utils {
                 || type == double.class || type == Double.class
                 || type == float.class || type == Float.class
                 || type == boolean.class || type == Boolean.class;
-
     }
 
     private static Object convertir(String valeur, Class<?> type) {
