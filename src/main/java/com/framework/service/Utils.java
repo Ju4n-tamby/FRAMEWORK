@@ -288,6 +288,10 @@ public class Utils {
             Parameter p = parametres[i];
             Class<?> type = p.getType();
 
+            if (type.isArray() && !Utils.estTypeSimple(type.getComponentType())) {
+                arguments[i] = Utils.construireTableau(type.getComponentType(), request);
+                continue;
+            }
             if (estTypeSimple(type)) {
                 String valeur = request.getParameter(p.getName());
                 arguments[i] = convertir(valeur, type);
@@ -304,6 +308,7 @@ public class Utils {
                 || type == long.class || type == Long.class
                 || type == double.class || type == Double.class
                 || type == float.class || type == Float.class
+                || type == java.util.Date.class || type == java.time.LocalDate.class
                 || type == boolean.class || type == Boolean.class;
     }
 
@@ -333,18 +338,69 @@ public class Utils {
             return Float.parseFloat(valeur);
         if (type == boolean.class || type == Boolean.class)
             return Boolean.parseBoolean(valeur);
+        if (type == java.util.Date.class) {
+            try {
+                return new java.text.SimpleDateFormat("yyyy-MM-dd").parse(valeur);
+            } catch (java.text.ParseException e) {
+                throw new IllegalArgumentException("Date invalide : " + valeur, e);
+            }
+        }
+        if (type == java.time.LocalDate.class) {
+            return java.time.LocalDate.parse(valeur);
+        }
         return valeur;
     }
 
     private static Object construireObjet(Class<?> type, HttpServletRequest request) throws Exception {
+        return construireObjet(type, request, "");
+    }
+
+    private static Object construireObjet(Class<?> type, HttpServletRequest request, String prefixe) throws Exception {
         Object instance = type.getDeclaredConstructor().newInstance();
         for (Field field : type.getDeclaredFields()) {
-            String valeur = request.getParameter(field.getName());
-            if (valeur != null) {
-                field.setAccessible(true);
-                field.set(instance, convertir(valeur, field.getType()));
+            if (Modifier.isStatic(field.getModifiers()) || field.isSynthetic())
+                continue;
+
+            String nom = prefixe + field.getName();
+            field.setAccessible(true);
+
+            if (estTypeSimple(field.getType())) {
+                String valeur = request.getParameter(nom);
+                if (valeur != null) {
+                    field.set(instance, convertir(valeur, field.getType()));
+                }
+            } else {
+                field.set(instance, construireObjet(field.getType(), request, nom + "."));
             }
         }
         return instance;
+    }
+
+    private static Object construireTableau(Class<?> type, HttpServletRequest request) throws Exception {
+        Field[] fields = type.getDeclaredFields();
+
+        // nombre de lignes = plus grand nombre de valeurs reçues pour un champ
+        int n = 0;
+        for (Field f : fields) {
+            if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic()) continue;
+            if (!estTypeSimple(f.getType())) continue;
+            String[] vals = request.getParameterValues(f.getName());
+            if (vals != null) n = Math.max(n, vals.length);
+        }
+
+        Object tableau = java.lang.reflect.Array.newInstance(type, n);
+        for (int i = 0; i < n; i++) {
+            Object obj = type.getDeclaredConstructor().newInstance();
+            for (Field f : fields) {
+                if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic()) continue;
+                if (!estTypeSimple(f.getType())) continue;
+                String[] vals = request.getParameterValues(f.getName());
+                if (vals == null || i >= vals.length) continue;
+                f.setAccessible(true);
+                f.set(obj, convertir(vals[i], f.getType()));
+            }
+            java.lang.reflect.Array.set(tableau, i, obj);
+        }
+        return tableau;
     }
 }
