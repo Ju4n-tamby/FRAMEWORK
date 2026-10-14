@@ -7,6 +7,7 @@ import com.framework.service.ViewPath;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -17,6 +18,7 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
+@MultipartConfig(maxFileSize = 50 * 1024 * 1024, maxRequestSize = 100 * 1024 * 1024)
 public class FrontController extends HttpServlet {
     private Map<UrlMethod, UrlMapping> mappings;
     private ViewPath viewPath;

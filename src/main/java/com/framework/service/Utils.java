@@ -3,12 +3,16 @@ package com.framework.service;
 import com.framework.annotation.Controller;
 import com.framework.annotation.FrontMapping;
 import com.framework.annotation.Url;
+import com.framework.model.MapFile;
 import com.framework.model.UrlMapping;
 import com.framework.model.UrlMethod;
 import com.framework.model.VueData;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Part;
+
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.io.File;
@@ -288,6 +292,10 @@ public class Utils {
             Parameter p = parametres[i];
             Class<?> type = p.getType();
 
+            if (type == MapFile.class) {
+                arguments[i] = Utils.construireMapFile(request, method.getName());
+                continue;
+            }
             if (type.isArray() && !Utils.estTypeSimple(type.getComponentType())) {
                 arguments[i] = Utils.construireTableau(type.getComponentType(), request);
                 continue;
@@ -300,6 +308,25 @@ public class Utils {
             }
         }
         return arguments;
+    }
+
+    private static MapFile construireMapFile(HttpServletRequest request, String nom) throws Exception {
+        String type = request.getContentType();
+        if (type == null || !type.toLowerCase().startsWith("multipart/")) {
+            return null; // formulaire sans enctype multipart : pas de fichier
+        }
+        Part part = request.getPart(nom);
+        if (part == null || part.getSize() == 0) {
+            return null; // aucun fichier choisi
+        }
+        String fichier = part.getSubmittedFileName();
+        String extension = "";
+        if (fichier != null && fichier.lastIndexOf('.') >= 0) {
+            extension = fichier.substring(fichier.lastIndexOf('.') + 1).toLowerCase();
+        }
+        try (InputStream in = part.getInputStream()) {
+            return new MapFile(in.readAllBytes(), extension);
+        }
     }
 
     private static boolean estTypeSimple(Class<?> type) {
