@@ -379,7 +379,6 @@ public class Utils {
     private static Object construireTableau(Class<?> type, HttpServletRequest request) throws Exception {
         Field[] fields = type.getDeclaredFields();
 
-        // nombre de lignes = plus grand nombre de valeurs reçues pour un champ
         int n = 0;
         for (Field f : fields) {
             if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic()) continue;
