@@ -293,7 +293,7 @@ public class Utils {
             Class<?> type = p.getType();
 
             if (type == MapFile.class) {
-                arguments[i] = Utils.construireMapFile(request, method.getName());
+                arguments[i] = Utils.construireMapFile(request, p.getName());
                 continue;
             }
             if (type.isArray() && !Utils.estTypeSimple(type.getComponentType())) {
