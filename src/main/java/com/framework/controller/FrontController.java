@@ -7,95 +7,82 @@ import com.framework.service.ViewPath;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
-@MultipartConfig(maxFileSize = 50 * 1024 * 1024, maxRequestSize = 100 * 1024 * 1024)
-public class FrontController extends HttpServlet {
+@MultipartConfig(maxFileSize=0x3200000L, maxRequestSize=0x6400000L)
+public class FrontController
+        extends HttpServlet {
     private Map<UrlMethod, UrlMapping> mappings;
     private ViewPath viewPath;
 
-    @Override
     public void init() throws ServletException {
-        mappings = (HashMap<UrlMethod, UrlMapping>) getServletContext().getAttribute("urlMappings");
-        viewPath = (ViewPath) getServletContext().getAttribute("viewPath");
+        this.mappings = (HashMap)this.getServletContext().getAttribute("urlMappings");
+        this.viewPath = (ViewPath)this.getServletContext().getAttribute("viewPath");
     }
 
-    public void affichage(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-
-        if (request.getDispatcherType() == DispatcherType.FORWARD) {
-            RequestDispatcher rd = getServletContext().getNamedDispatcher("jsp");
-            rd.forward(request, response);
+    public void affichage(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws ServletException, IOException {
+        String string;
+        UrlMethod urlMethod;
+        UrlMapping urlMapping;
+        if (httpServletRequest.getDispatcherType() == DispatcherType.FORWARD) {
+            RequestDispatcher requestDispatcher = this.getServletContext().getNamedDispatcher("jsp");
+            requestDispatcher.forward((ServletRequest)httpServletRequest, (ServletResponse)httpServletResponse);
             return;
         }
-
-        String path = request.getPathInfo();
-        if (path == null) {
-            path = request.getServletPath();
+        String string2 = httpServletRequest.getPathInfo();
+        if (string2 == null) {
+            string2 = httpServletRequest.getServletPath();
         }
-
-        String httpMethod = request.getMethod();
-        UrlMethod urlMethod = new UrlMethod(path, httpMethod);
-
-        UrlMapping urlMapping = mappings.get(urlMethod);
-
-        if (urlMapping != null) {
+        if ((urlMapping = this.mappings.get(urlMethod = new UrlMethod(string2, string = httpServletRequest.getMethod()))) != null) {
             try {
-                Object controller = urlMapping.getClazz().getDeclaredConstructor().newInstance();
+                Object t = urlMapping.getClazz().getDeclaredConstructor(new Class[0]).newInstance(new Object[0]);
                 Method method = urlMapping.getMethod();
-                Object[] args = Utils.construireArguments(method, request);
-                Object result = method.invoke(controller, args);
-
+                Object[] objectArray = Utils.construireArguments(method, httpServletRequest);
+                Object object = method.invoke(t, objectArray);
+                Utils.synchroniserSessions(objectArray, httpServletRequest);
                 if (Utils.estRestAPI(method)) {
-                    Utils.envoyerJson(result, response);
-                } else {
-                    Utils.redirigerRequete(result, this.viewPath, request, response);
+                    Utils.envoyerJson(object, httpServletResponse);
                 }
-            } catch (Exception exception) {
-                throw new ServletException(exception);
+                Utils.redirigerRequete(object, this.viewPath, httpServletRequest, httpServletResponse);
+            }
+            catch (Exception exception) {
+                throw new ServletException((Throwable)exception);
             }
         } else {
-            response.setContentType("text/html;charset=UTF-8");
-            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            PrintWriter out = response.getWriter();
-
-            out.println("<h1>404 - Page non trouvée</h1>");
-            out.println("<p>L'URL <b>" + path + "</b> n'est pas prise en charge.</p>");
-            out.println("<h2>URLs disponibles :</h2>");
-            out.println("<ul>");
-            for (UrlMethod m : mappings.keySet()) {
-                if (m.getMethod().equals("POST"))
-                    out.println(
-                            "<li><form action='" + request.getContextPath() + m.getUrl() + "' method='POST'>" +
-                                    "<button type='submit'>" + m.getUrl() + "</button>" +
-                                    " → " + mappings.get(m) +
-                                    "</form></li>");
-                else
-                    out.println("<li><a href='" + request.getContextPath() + m.getUrl() + "'>" + m.getUrl()
-                            + "</a> → " + mappings.get(m) + "</li>");
+            httpServletResponse.setContentType("text/html;charset=UTF-8");
+            httpServletResponse.setStatus(404);
+            PrintWriter printWriter = httpServletResponse.getWriter();
+            printWriter.println("<h1>404 - Page non trouv\u00e9e</h1>");
+            printWriter.println("<p>L'URL <b>" + string2 + "</b> n'est pas prise en charge.</p>");
+            printWriter.println("<h2>URLs disponibles :</h2>");
+            printWriter.println("<ul>");
+            for (UrlMethod urlMethod2 : this.mappings.keySet()) {
+                if (urlMethod2.getMethod().equals("POST")) {
+                    printWriter.println("<li><form action='" + httpServletRequest.getContextPath() + urlMethod2.getUrl() + "' method='POST'><button type='submit'>" + urlMethod2.getUrl() + "</button> \u2192 " + String.valueOf(this.mappings.get(urlMethod2)) + "</form></li>");
+                    continue;
+                }
+                printWriter.println("<li><a href='" + httpServletRequest.getContextPath() + urlMethod2.getUrl() + "'>" + urlMethod2.getUrl() + "</a> \u2192 " + String.valueOf(this.mappings.get(urlMethod2)) + "</li>");
             }
-            out.println("</ul>");
+            printWriter.println("</ul>");
         }
     }
 
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        affichage(request, response);
+    protected void doGet(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws ServletException, IOException {
+        this.affichage(httpServletRequest, httpServletResponse);
     }
 
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        affichage(request, response);
+    protected void doPost(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws ServletException, IOException {
+        this.affichage(httpServletRequest, httpServletResponse);
     }
 }
+

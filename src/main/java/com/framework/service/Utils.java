@@ -3,10 +3,7 @@ package com.framework.service;
 import com.framework.annotation.Controller;
 import com.framework.annotation.FrontMapping;
 import com.framework.annotation.Url;
-import com.framework.model.MapFile;
-import com.framework.model.UrlMapping;
-import com.framework.model.UrlMethod;
-import com.framework.model.VueData;
+import com.framework.model.*;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -296,6 +293,12 @@ public class Utils {
                 arguments[i] = Utils.construireMapFile(request, p.getName());
                 continue;
             }
+
+            if (type == MapSession.class) {
+                arguments[i] = MapSession.from(request.getSession());
+                continue;
+            }
+
             if (type.isArray() && !Utils.estTypeSimple(type.getComponentType())) {
                 arguments[i] = Utils.construireTableau(type.getComponentType(), request);
                 continue;
@@ -428,5 +431,13 @@ public class Utils {
             java.lang.reflect.Array.set(tableau, i, obj);
         }
         return tableau;
+    }
+
+    public static void synchroniserSessions(Object[] args, HttpServletRequest httpServletRequest) {
+        for (Object arg : args) {
+            if (arg instanceof MapSession) {
+                ((MapSession)arg).applyTo(httpServletRequest.getSession());
+            }
+        }
     }
 }
