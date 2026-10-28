@@ -2,6 +2,7 @@ package com.framework.controller;
 
 import com.framework.model.UrlMapping;
 import com.framework.model.UrlMethod;
+import com.framework.service.AuthConfig;
 import com.framework.service.Utils;
 import com.framework.service.ViewPath;
 import jakarta.servlet.DispatcherType;
@@ -45,8 +46,12 @@ public class FrontController
         }
         if ((urlMapping = this.mappings.get(urlMethod = new UrlMethod(string2, string = httpServletRequest.getMethod()))) != null) {
             try {
-                Object t = urlMapping.getClazz().getDeclaredConstructor(new Class[0]).newInstance(new Object[0]);
                 Method method = urlMapping.getMethod();
+                if (Utils.estProtege(method) && !AuthConfig.estConnecte(httpServletRequest)) {
+                    httpServletResponse.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Pas d'user");
+                    return;
+                }
+                Object t = urlMapping.getClazz().getDeclaredConstructor(new Class[0]).newInstance(new Object[0]);
                 Object[] objectArray = Utils.construireArguments(method, httpServletRequest);
                 Object object = method.invoke(t, objectArray);
                 Utils.synchroniserSessions(objectArray, httpServletRequest);

@@ -2,6 +2,7 @@ package com.framework.listener;
 
 import com.framework.model.UrlMapping;
 import com.framework.model.UrlMethod;
+import com.framework.service.AuthConfig;
 import com.framework.service.UploadConfig;
 import com.framework.service.Utils;
 import com.framework.service.ViewPath;
@@ -26,6 +27,16 @@ public class ContextListener implements ServletContextListener {
             event.getServletContext().setAttribute("viewPath", new ViewPath(prefix, suffix));
 
             UploadConfig.load(event.getServletContext());
+
+            AuthConfig.load(event.getServletContext());
+            if (!AuthConfig.isConfigured()) {
+                for (UrlMapping mapping : this.urlMappings.values()) {
+                    if (Utils.estProtege(mapping.getMethod())) {
+                        throw new IllegalStateException("@Auth utilisé sur " + mapping
+                                + " mais le context-param \"" + AuthConfig.PARAM_SESSION + "\" est absent du web.xml");
+                    }
+                }
+            }
         } catch (Exception exception) {
             throw new RuntimeException("Erreur lors de l initialisation du contexte", exception);
         }

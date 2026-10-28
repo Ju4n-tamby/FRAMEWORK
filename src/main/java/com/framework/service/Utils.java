@@ -27,7 +27,7 @@ public class Utils {
         List<Class<?>> classes = findClass(packageName);
         List<String> controllerNames = new ArrayList<>();
         for (Class<?> clazz : classes) {
-            if (clazz.isAnnotationPresent(com.framework.annotation.Controller.class)) {
+            if (clazz.isAnnotationPresent(Controller.class)) {
                 controllerNames.add(clazz.getName());
             }
         }
@@ -150,6 +150,12 @@ public class Utils {
 
     public static void redirigerRequete(Object result, ViewPath viewPath, HttpServletRequest request,
             HttpServletResponse response) throws IOException, ServletException {
+        String vueDemandee = result instanceof String ? (String) result
+                : (result instanceof VueData ? ((VueData) result).getVue() : null);
+        if (vueDemandee != null && vueDemandee.startsWith("redirect:")) {
+            response.sendRedirect(request.getContextPath() + vueDemandee.substring("redirect:".length()));
+            return;
+        }
         if (result instanceof String) {
             String vue = formatterVue((String) result, viewPath);
 
@@ -169,12 +175,16 @@ public class Utils {
         }
     }
 
+    public static boolean estProtege(Method method) {
+        return method.isAnnotationPresent(com.framework.annotation.Auth.class);
+    }
+
     public static boolean estRestAPI(Method method) {
         return method.isAnnotationPresent(com.framework.annotation.RestAPI.class)
                 || method.getDeclaringClass().isAnnotationPresent(com.framework.annotation.RestAPI.class);
     }
 
-    public static void envoyerJson(Object object, HttpServletResponse response) throws java.io.IOException {
+    public static void envoyerJson(Object object, HttpServletResponse response) throws IOException {
         response.setContentType("application/json;charset=UTF-8");
         response.setCharacterEncoding("UTF-8");
         java.io.PrintWriter writer = response.getWriter();
@@ -338,7 +348,7 @@ public class Utils {
                 || type == long.class || type == Long.class
                 || type == double.class || type == Double.class
                 || type == float.class || type == Float.class
-                || type == java.util.Date.class || type == java.time.LocalDate.class
+                || type == Date.class || type == java.time.LocalDate.class
                 || type == boolean.class || type == Boolean.class;
     }
 
@@ -368,7 +378,7 @@ public class Utils {
             return Float.parseFloat(valeur);
         if (type == boolean.class || type == Boolean.class)
             return Boolean.parseBoolean(valeur);
-        if (type == java.util.Date.class) {
+        if (type == Date.class) {
             try {
                 return new java.text.SimpleDateFormat("yyyy-MM-dd").parse(valeur);
             } catch (java.text.ParseException e) {
