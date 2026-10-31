@@ -1,5 +1,6 @@
 package com.framework.listener;
 
+import com.framework.annotation.Auth;
 import com.framework.model.UrlMapping;
 import com.framework.model.UrlMethod;
 import com.framework.service.AuthConfig;
@@ -31,9 +32,16 @@ public class ContextListener implements ServletContextListener {
             AuthConfig.load(event.getServletContext());
             if (!AuthConfig.isConfigured()) {
                 for (UrlMapping mapping : this.urlMappings.values()) {
-                    if (Utils.estProtege(mapping.getMethod())) {
+                    if (!Utils.estProtege(mapping.getMethod())) {
+                        continue;
+                    }
+                    if (!AuthConfig.isConfigured()) {
                         throw new IllegalStateException("@Auth utilisé sur " + mapping
                                 + " mais le context-param \"" + AuthConfig.PARAM_SESSION + "\" est absent du web.xml");
+                    }
+                    if (mapping.getMethod().getAnnotation(Auth.class).roles().length > 0 && !AuthConfig.isRoleConfigured()) {
+                        throw new IllegalStateException("@Auth(roles) utilisé sur " + mapping
+                                + " mais le context-param \"" + AuthConfig.PARAM_ROLE_SESSION + "\" est absent du web.xml");
                     }
                 }
             }

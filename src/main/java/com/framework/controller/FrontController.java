@@ -1,5 +1,6 @@
 package com.framework.controller;
 
+import com.framework.annotation.Auth;
 import com.framework.model.UrlMapping;
 import com.framework.model.UrlMethod;
 import com.framework.service.AuthConfig;
@@ -47,9 +48,15 @@ public class FrontController
         if ((urlMapping = this.mappings.get(urlMethod = new UrlMethod(string2, string = httpServletRequest.getMethod()))) != null) {
             try {
                 Method method = urlMapping.getMethod();
-                if (Utils.estProtege(method) && !AuthConfig.estConnecte(httpServletRequest)) {
-                    httpServletResponse.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Pas d'user");
-                    return;
+                if (Utils.estProtege(method)) {
+                    if (!AuthConfig.estConnecte(httpServletRequest)) {
+                        httpServletResponse.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Pas d'user");
+                        return;
+                    }
+                    if (!AuthConfig.aleRole(httpServletRequest, method.getAnnotation(Auth.class).roles())) {
+                        httpServletResponse.sendError(HttpServletResponse.SC_FORBIDDEN, "Rôle non autorisé");
+                        return;
+                    }
                 }
                 Object t = urlMapping.getClazz().getDeclaredConstructor(new Class[0]).newInstance(new Object[0]);
                 Object[] objectArray = Utils.construireArguments(method, httpServletRequest);
